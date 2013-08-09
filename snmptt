@@ -3235,7 +3235,7 @@ sub readtrap
           chomp $line2;
           push(@rawtrap, $line2);
           $temp2.=" ".$line2;
-          if ($line2 =~ /[^\\]\"$/)     # Ends in a non-escaped quote
+          if ($line2 =~ /(^|[^\\])\"$/) # Ends in a non-escaped quote
           {
             last;
           }
@@ -3295,7 +3295,7 @@ sub readtrap
           chomp $line2;
           push(@rawtrap, $line2);
           $line.=" ".$line2;
-          if ($line2 =~ /[^\\]\"$/)                  # Ends in a non-escaped quote
+          if ($line2 =~ /(^|[^\\])\"$/) # Ends in a non-escaped quote
           {
             last;
           }
