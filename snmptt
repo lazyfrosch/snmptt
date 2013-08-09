@@ -53,6 +53,8 @@ sub showversion
 {
   print "\nSNMPTT $snmptt_version\n";
   print "(c) 2002-2007 Alex Burger\n";
+  print "(c) 2012 NETWAYS GmbH, Jannis Mosshammer, Philipp Deneu\n";
+  print "(c) 2013 NETWAYS GmbH, Markus Frosch\n";
   print "http://snmptt.sourceforge.net\n\n";
 }
 
@@ -239,6 +241,10 @@ my $pre_exec_enable;
 my $unknown_trap_exec;
 my $unknown_trap_exec_format;
 my $exec_escape;
+
+# PIPE output
+my $pipeout_enable;
+my $pipeout_pipe;
 
 # SQL
 my $db_translate_enterprise;
@@ -1868,6 +1874,29 @@ sub processtrap
             $trap_successfully_logged++;
           }
         }
+
+        if ($pipeout_enable == 1)
+        {
+          $trap_attempted_to_log++;
+
+          # TODO: avoid blocking here
+          # TODO: more general format
+          if (open(EDBC_PIPE,">>$pipeout_pipe"))
+          {
+            my $trapstring = $agent_dns_name. "\t".
+                             $var[4]."\t".
+                             getNumericPriority($event2[2])."\t".
+                             $trap_date_time_sql."\t".
+                             $message_short."\n";
+            print EDBC_PIPE $trapstring;
+            close(EDBC_PIPE);
+            $trap_successfully_logged++;
+          }
+          else {
+            warn "Could not open PIPE to write to: $pipeout_pipe", "\n";
+          }
+        }
+
 
         if ($postgresql_dbi_enable == 1)
         {
@@ -4133,6 +4162,9 @@ sub loadsnmpttini {
   $unknown_trap_exec_format = $cfg->val('Exec', 'unknown_trap_exec_format');
   $exec_escape = $cfg->val('Exec', 'exec_escape');
 
+  $pipeout_enable = $cfg->val('PIPEOUT','pipeout_enable');
+  $pipeout_pipe = $cfg->val('PIPEOUT','pipeout_pipe') ;
+
   # SQL
   $db_translate_enterprise = $cfg->val('SQL', 'db_translate_enterprise');
   $db_unknown_trap_format = $cfg->val('SQL', 'db_unknown_trap_format');
@@ -4273,6 +4305,8 @@ sub loadsnmpttini {
   }
   if (! defined ($db_translate_enterprise)) { $db_translate_enterprise = 0} ;
   if (! defined ($db_unknown_trap_format)) { $db_unknown_trap_format = '$-*'} ;
+  if (! defined ($pipeout_enable)) { $pipeout_enable = 0} ;
+  if (! defined ($pipeout_pipe)) { $pipeout_pipe = '/tmp/from_snmptt.pipe'} ;
   if (! defined ($mysql_dbi_enable)) { $mysql_dbi_enable = 0} ;
   if (! defined ($mysql_dbi_host)) { $mysql_dbi_host = 'localhost'} ;
   if (! defined ($mysql_dbi_port)) { $mysql_dbi_port = '3306'} ;
